@@ -1,12 +1,19 @@
 package v1
 
 import (
+	"adams549659584/go-proxy-bingai/common"
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	binglib "github.com/Harry-zklcdc/bing-lib"
 )
 
 func ModelHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Methods", "*")
+	w.Header().Add("Access-Control-Allow-Headers", "*")
+
 	if apikey != "" && r.Header.Get("Authorization") != "Bearer "+apikey {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
@@ -21,7 +28,7 @@ func ModelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if modelId != "dall-e-3" && !isInArray(chatMODELS, modelId) {
+	if !common.IsInArray([]string{DALL_E_3, GPT_35_TURBO, GPT_4_TURBO_PREVIEW, GPT_35_TURBO_16K, GPT_4_32K, GPT_4_VISION}, modelId) && !common.IsInArray(binglib.ChatModels[:], strings.ReplaceAll(modelId, "-vision", "")) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("Not Found"))
 		return
@@ -37,7 +44,9 @@ func ModelHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		common.Logger.Error("ModelHandler Marshal Error: %v", err)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(respData)
 }
